@@ -85,6 +85,31 @@ function App() {
   }
 
   
+  const onChangeColor = async (noteId, color) => {
+    try {
+      const response = await fetch(`http://localhost:4000/updateNoteColor/${noteId}`, {
+        method: 'PATCH',
+        headers: {
+            'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ color }),
+      });
+  
+      if (!response.ok) {
+        throw new Error('Failed to update note color');
+      }
+  
+      setNotes((prevNotes) =>
+        prevNotes.map((note) =>
+          note._id === noteId ? { ...note, color: color } : note
+        )
+      );
+    } catch (error) {
+      console.error(error);
+    }
+  };
+
+
   // -- Dialog functions --
   const editNote = (entry) => {
     setDialogNote(entry)
@@ -152,15 +177,16 @@ function App() {
             : 
             filteredNotes ?
             filteredNotes.map((entry) => {
-              return (
-              <div key={entry._id}>
-                <Note
-                entry={entry} 
-                editNote={editNote} 
-                deleteNote={deleteNote}
-                />
-              </div>
-              )
+            return (
+                <div key={entry._id}>
+                    <Note
+                    entry={entry} 
+                    editNote={editNote} 
+                    deleteNote={deleteNote}
+                    onChangeColor={onChangeColor}
+                    />
+                </div>
+            )
             })
             :
             <div style={AppStyle.notesError}>

@@ -2,6 +2,7 @@ import React, {useState, useEffect} from "react"
 import './App.css';
 import Dialog from "./Dialog";
 import Note from "./Note";
+import NoteSearch from "./NoteSearch";
 
 function App() {
 
@@ -12,7 +13,7 @@ function App() {
   // -- Dialog props-- 
   const [dialogOpen, setDialogOpen] = useState(false)
   const [dialogNote, setDialogNote] = useState(null)
-
+  const [searchQuery, setSearchQuery] = useState("");
   
   // -- Database interaction functions --
   useEffect(() => {
@@ -38,24 +39,25 @@ function App() {
     getNotes()
   }, [])
 
-  const deleteNote = async (entry) => {
-    deleteNoteState(entry._id);
-
-    try {
-      const response = await fetch(`http://localhost:4000/deleteNote/${entry._id}`, {
-        method: "DELETE",
-        headers: {
-            "Content-Type": "application/json"
-        },
+const deleteNote = async (entry) => {
+    // Code for DELETE note here
+      try {
+      const response = await fetch(`http://localhost:4000/deleteNote/${entry._id}`,
+      {
+        method: "DELETE"
       });
-  
+
       if (!response.ok) {
-        console.log("Server failed to delete the note:", response.status);
+        console.log("Error deleting note:", response.status);
+        alert("Error deleting note. Please try again.");
       }
     } catch (error) {
-      console.error("Delete function failed:", error);
+        console.log("Fetch function failed:", error)
+      } finally {
+        setNotes(deleteNoteState(entry))
+      }
     }
-  }
+
 
   const deleteAllNotes = async () => {
     try {
@@ -84,6 +86,31 @@ function App() {
   }
 
   
+  const onChangeColor = async (noteId, color) => {
+    try {
+      const response = await fetch(`http://localhost:4000/updateNoteColor/${noteId}`, {
+        method: 'PATCH',
+        headers: {
+            'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ color }),
+      });
+  
+      if (!response.ok) {
+        throw new Error('Failed to update note color');
+      }
+  
+      setNotes((prevNotes) =>
+        prevNotes.map((note) =>
+          note._id === noteId ? { ...note, color: color } : note
+        )
+      );
+    } catch (error) {
+      console.error(error);
+    }
+  };
+
+
   // -- Dialog functions --
   const editNote = (entry) => {
     setDialogNote(entry)
@@ -109,8 +136,10 @@ function App() {
     setNotes((prevNotes) => [...prevNotes, {_id, title, content}])
   }
 
-  const deleteNoteState = (_id) => {
-    setNotes((prevNotes) => prevNotes.filter((note) => note._id !== _id))
+  const deleteNoteState = (entry) => {
+    // Code for modifying state after DELETE here
+    return notes.filter((note) => note._id !== entry._id) // this returns a new array with the deleted note removed.
+    // the new array is created by adding all notes that don't match the deleted note.
   }
 
   const deleteAllNotesState = () => {
@@ -129,6 +158,13 @@ function App() {
     }))
   }
 
+
+  const filteredNotes = searchQuery
+  ? notes.filter(note =>
+      note.title.toLowerCase().includes(searchQuery.toLowerCase())
+    )
+  : notes;
+
   return (
     <div className="App">
       <header className="App-header">
@@ -136,21 +172,24 @@ function App() {
           <h1 style={AppStyle.title}>QuirkNotes</h1>
           <h4 style={AppStyle.text}>The best note-taking app ever </h4>
 
+          <NoteSearch searchQuery={searchQuery} setSearchQuery={setSearchQuery} />
+
           <div style={AppStyle.notesSection}>
             {loading ?
             <>Loading...</>
             : 
-            notes ?
-            notes.map((entry) => {
-              return (
-              <div key={entry._id}>
-                <Note
-                entry={entry} 
-                editNote={editNote} 
-                deleteNote={deleteNote}
-                />
-              </div>
-              )
+            filteredNotes ?
+            filteredNotes.map((entry) => {
+            return (
+                <div key={entry._id}>
+                    <Note
+                    entry={entry} 
+                    editNote={editNote} 
+                    deleteNote={deleteNote}
+                    onChangeColor={onChangeColor}
+                    />
+                </div>
+            )
             })
             :
             <div style={AppStyle.notesError}>
@@ -203,3 +242,4 @@ const AppStyle = {
     margin: "0px"
   }
 }
+

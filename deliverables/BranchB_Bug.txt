@@ -1,1 +1,3 @@
-The code wasn't working because there wasa bug
+In the front end the deleteNoteState function is being called before making sure the note was deleted in the backend. This can lead to an error where the note is deleted in the front end but not in the backend.
+To fix this issue, we should only update the frontend state if the server successfully deletes the note. This means calling the deleteNoteState function after checking that the note was deleted from the database.
+In the backend, the delete function is only returning an error response and doesn't attempt to delete the note from the database. The fix is to write all the necessary code to delete the note and send the correct response.
